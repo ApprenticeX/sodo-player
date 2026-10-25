@@ -36,8 +36,6 @@ export function HomePage({ user, onNavigate, onLogout }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  const menuRef = useRef(null);
-
   const { playTrack, playVideo, playPlaylist, currentTrack, isPlaying, toggleFavoriteTrack } = usePlayer();
 
   const showToast = (msg) => {
@@ -57,10 +55,7 @@ export function HomePage({ user, onNavigate, onLogout }) {
   // Close 3-dot menus on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (e.target.closest('.ytm-track-menu-zone')) {
-        return;
-      }
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (!e.target.closest('.ytm-track-menu-zone')) {
         setOpenMenuId(null);
       }
     };
@@ -630,7 +625,7 @@ export function HomePage({ user, onNavigate, onLogout }) {
               </button>
             </div>
           ) : (
-            <div className="ytm-tracklist-container" ref={menuRef}>
+            <div className="ytm-tracklist-container">
               {filteredSongs.map((song, idx) => {
                 const vid = song.video_id || song.id;
                 const playing = isSongPlaying(song);
@@ -642,7 +637,7 @@ export function HomePage({ user, onNavigate, onLogout }) {
                 return (
                   <div
                     key={`track-${song.id}`}
-                    className={`ytm-track-row ${isCurrent ? 'is-active' : ''}`}
+                    className={`ytm-track-row ${isCurrent ? 'is-active' : ''} ${isMenuOpen ? 'menu-open' : ''}`}
                     onClick={() => playTrack(song, filteredSongs)}
                   >
                     {/* Index / Play Indicator */}
@@ -823,6 +818,7 @@ export function HomePage({ user, onNavigate, onLogout }) {
             duration: addToPlaylistVideo.duration,
             views: addToPlaylistVideo.views,
           }}
+          user={user}
           onNavigate={onNavigate}
           onClose={() => setAddToPlaylistVideo(null)}
           onSuccess={(path) => {

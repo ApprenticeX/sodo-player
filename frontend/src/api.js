@@ -167,12 +167,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({
         video_id,
-        title,
-        thumbnail,
-        channel,
+        title: title || 'Untitled Track',
+        thumbnail: thumbnail || '',
+        channel: channel || '',
         duration: duration || '',
         views: views || '',
-        folder_path,
+        folder_path: folder_path || 'ALL',
         is_favorite: !!is_favorite,
       }),
     });

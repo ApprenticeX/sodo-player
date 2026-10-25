@@ -753,6 +753,8 @@ export function PlaylistsPage({ user, onNavigate, onLogout }) {
             duration: addToPlaylistVideo.duration,
             views: addToPlaylistVideo.views,
           }}
+          user={user}
+          onNavigate={onNavigate}
           onClose={() => setAddToPlaylistVideo(null)}
           onSuccess={(path) => {
             showToast(`Added to ${path}`);

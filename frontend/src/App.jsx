@@ -186,7 +186,7 @@ export default function App() {
       <div className="app-main-viewport">
         {renderCurrentPage()}
         {/* Sticky Professional Bottom Music Player Bar */}
-        <MusicPlayerBar onNavigate={handleNavigate} />
+        <MusicPlayerBar onNavigate={handleNavigate} user={user} />
       </div>
     </PlayerProvider>
   );

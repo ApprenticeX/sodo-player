@@ -861,6 +861,12 @@ input, select, textarea {
   transition: background-color var(--transition-fast);
   cursor: pointer;
   user-select: none;
+  position: relative;
+}
+
+.ytm-track-row.menu-open,
+.ytm-track-row:has(.ytm-context-menu) {
+  z-index: 60;
 }
 
 .ytm-track-row:hover {
@@ -1721,9 +1727,15 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background-color: transparent;
   transition: transform var(--transition-fast);
+  position: relative;
+}
+
+.ytm-video-card.menu-open,
+.ytm-video-card:has(.ytm-context-menu) {
+  z-index: 60;
 }
 
 .ytm-video-thumb-box {
@@ -1846,13 +1858,14 @@ input, select, textarea {
 .ytm-video-menu-wrap {
   position: relative;
   flex-shrink: 0;
+  z-index: 70;
 }
 
 /* ==========================================================================
    MODALS, DIALOGS & POPUPS
    ========================================================================== */
 
-.ytm-modal-backdrop {
+.ytm-modal-backdrop, .yt-modal-backdrop {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.75);
@@ -1864,7 +1877,7 @@ input, select, textarea {
   z-index: 1000;
 }
 
-.ytm-modal-box {
+.ytm-modal-box, .yt-modal-content {
   width: 100%;
   max-width: 520px;
   background-color: var(--bg-elevated);
@@ -1884,7 +1897,7 @@ input, select, textarea {
   to { opacity: 1; transform: scale(1); }
 }
 
-.ytm-modal-header {
+.ytm-modal-header, .yt-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1892,7 +1905,7 @@ input, select, textarea {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.ytm-modal-title {
+.ytm-modal-title, .yt-modal-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1901,14 +1914,14 @@ input, select, textarea {
   text-overflow: ellipsis;
 }
 
-.ytm-modal-close {
+.ytm-modal-close, .yt-modal-close {
   color: var(--text-muted);
   font-size: 18px;
   cursor: pointer;
   padding: 4px;
 }
 
-.ytm-modal-close:hover {
+.ytm-modal-close:hover, .yt-modal-close:hover {
   color: var(--text-primary);
 }
 
@@ -2607,6 +2620,58 @@ input, select, textarea {
   background-color: var(--bg-elevated);
   border: 1px solid var(--border-medium);
   border-radius: 12px;
+}
+
+.folder-modal-body {
+  padding: 20px;
+}
+
+.folder-modal-error {
+  background-color: rgba(255, 68, 68, 0.15);
+  border: 1px solid rgba(255, 68, 68, 0.35);
+  color: #ff8080;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.yt-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.yt-nav-btn-secondary {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.yt-nav-btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.yt-nav-btn-primary {
+  background-color: var(--accent-red);
+  color: #ffffff;
+  border: none;
+}
+
+.yt-nav-btn-primary:hover {
+  background-color: var(--accent-red-hover);
+}
+
+.yt-nav-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .folder-video-preview {

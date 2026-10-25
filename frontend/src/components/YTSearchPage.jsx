@@ -72,10 +72,7 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
   // Close 3-dot dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (e.target.closest('.ytm-video-menu-wrap')) {
-        return; // Let menu wrap button toggle handle it
-      }
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (!e.target.closest('.ytm-video-menu-wrap')) {
         setOpenMenuId(null);
       }
     };
@@ -295,7 +292,7 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
                 isPlaying;
 
               return (
-                <div key={video.id} className="ytm-video-card">
+                <div key={video.id} className={`ytm-video-card ${isMenuOpen ? 'menu-open' : ''}`}>
                   {/* Thumbnail Container: Clicking plays in Music Mode by default */}
                   <div
                     className="ytm-video-thumb-box"
@@ -612,6 +609,8 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
       {addToPlaylistVideo && (
         <AddToPlaylistModal
           video={addToPlaylistVideo}
+          user={user}
+          onNavigate={onNavigate}
           onClose={() => setAddToPlaylistVideo(null)}
           onSuccess={(path) => showToast(`Added to playlist "${path}"!`)}
         />

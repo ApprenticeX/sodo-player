@@ -9,7 +9,7 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-export function MusicPlayerBar({ onNavigate }) {
+export function MusicPlayerBar({ onNavigate, user }) {
   const {
     currentTrack,
     setCurrentTrack,
@@ -574,6 +574,7 @@ export function MusicPlayerBar({ onNavigate }) {
             duration: currentTrack.duration,
             views: currentTrack.views,
           }}
+          user={user}
           onNavigate={onNavigate}
           onClose={() => setIsAddToPlaylistOpen(false)}
           onSuccess={(path) => {

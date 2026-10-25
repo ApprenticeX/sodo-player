@@ -27,6 +27,7 @@ export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate
           setSelectedFolder(folderList[0]);
         } else {
           setSelectedFolder('__NEW_ROOT__');
+          setSubfolderInput((prev) => (prev ? prev : 'PLAYLIST'));
         }
       } catch (err) {
         console.error('Failed to load folders:', err);
@@ -102,14 +103,14 @@ export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate
   };
 
   return (
-    <div className="yt-modal-backdrop" onClick={onClose}>
-      <div className="yt-modal-content folder-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="yt-modal-header">
+    <div className="ytm-modal-backdrop yt-modal-backdrop" onClick={onClose}>
+      <div className="ytm-modal-box folder-modal yt-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="ytm-modal-header yt-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>📁</span>
-            <h4 className="yt-modal-title">Add to Hierarchical Playlist</h4>
+            <h4 className="ytm-modal-title yt-modal-title">Add to Hierarchical Playlist</h4>
           </div>
-          <button type="button" className="yt-modal-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="ytm-modal-close yt-modal-close" onClick={onClose} aria-label="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -127,12 +128,12 @@ export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate
               Playlists are account-specific. Please sign in or register to save "{video.title}" to your personal folders.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-              <button type="button" className="yt-nav-btn yt-nav-btn-secondary" onClick={onClose}>
+              <button type="button" className="ytm-btn-pill-ghost yt-nav-btn yt-nav-btn-secondary" onClick={onClose}>
                 Cancel
               </button>
               <button
                 type="button"
-                className="yt-nav-btn yt-nav-btn-primary"
+                className="ytm-btn-pill-red yt-nav-btn yt-nav-btn-primary"
                 onClick={() => {
                   onClose();
                   if (onNavigate) onNavigate('login');
@@ -255,12 +256,12 @@ export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button type="button" className="yt-nav-btn yt-nav-btn-secondary" onClick={onClose}>
+            <button type="button" className="ytm-btn-pill-ghost yt-nav-btn yt-nav-btn-secondary" onClick={onClose}>
               Cancel
             </button>
             <button
               type="submit"
-              className="yt-nav-btn yt-nav-btn-primary"
+              className="ytm-btn-pill-red yt-nav-btn yt-nav-btn-primary"
               disabled={isSubmitting || !computedPath}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
