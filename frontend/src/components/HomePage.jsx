@@ -57,6 +57,9 @@ export function HomePage({ user, onNavigate, onLogout }) {
   // Close 3-dot menus on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
+      if (e.target.closest('.ytm-track-menu-zone')) {
+        return;
+      }
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpenMenuId(null);
       }
@@ -716,7 +719,10 @@ export function HomePage({ user, onNavigate, onLogout }) {
                       <button
                         type="button"
                         className="ytm-dots-action-btn"
-                        onClick={() => setOpenMenuId(isMenuOpen ? null : song.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId((prev) => (prev === song.id ? null : song.id));
+                        }}
                         title="More options"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

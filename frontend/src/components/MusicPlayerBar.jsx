@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
+import { AddToPlaylistModal } from './AddToPlaylistModal';
 
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '0:00';
@@ -11,6 +12,7 @@ function formatTime(seconds) {
 export function MusicPlayerBar({ onNavigate }) {
   const {
     currentTrack,
+    setCurrentTrack,
     isPlaying,
     queue,
     queueIndex,
@@ -47,6 +49,7 @@ export function MusicPlayerBar({ onNavigate }) {
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubValue, setScrubValue] = useState(0);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isAddToPlaylistOpen, setIsAddToPlaylistOpen] = useState(false);
 
   const displayTime = isScrubbing ? scrubValue : currentTime;
   const progressPercent = duration > 0 ? Math.min(100, (displayTime / duration) * 100) : 0;
@@ -233,7 +236,7 @@ export function MusicPlayerBar({ onNavigate }) {
               <div className="ytm-bar-artist-row">
                 <span className="ytm-bar-artist-name">{currentTrack.channel}</span>
 
-                {currentTrack.folder_path && (
+                {currentTrack.folder_path ? (
                   <button
                     type="button"
                     className="ytm-bar-folder-pill"
@@ -241,6 +244,15 @@ export function MusicPlayerBar({ onNavigate }) {
                     title={`Folder: ${currentTrack.folder_path}. Click to view in Library.`}
                   >
                     📂 {currentTrack.folder_path}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="ytm-bar-folder-pill add-new"
+                    onClick={() => setIsAddToPlaylistOpen(true)}
+                    title="Track is not in any playlist. Click to add to a playlist."
+                  >
+                    ➕ Add to Playlist
                   </button>
                 )}
 
@@ -278,6 +290,20 @@ export function MusicPlayerBar({ onNavigate }) {
                 strokeWidth="2"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+
+            {/* Add to Playlist Quick Button */}
+            <button
+              type="button"
+              className="ytm-bar-playlist-btn"
+              onClick={() => setIsAddToPlaylistOpen(true)}
+              title={currentTrack.folder_path ? `Move or add to playlist (Current: ${currentTrack.folder_path})` : "Add to Playlist"}
+              aria-label="Add to Playlist"
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </button>
           </div>
@@ -416,6 +442,26 @@ export function MusicPlayerBar({ onNavigate }) {
               </svg>
             </button>
 
+            {/* Add to Playlist Action */}
+            <button
+              type="button"
+              className="ytm-icon-btn"
+              onClick={() => setIsAddToPlaylistOpen(true)}
+              title="Add current track to playlist"
+              aria-label="Add to Playlist"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="15" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" strokeWidth="3" />
+                <line x1="3" y1="12" x2="3.01" y2="12" strokeWidth="3" />
+                <line x1="3" y1="18" x2="3.01" y2="18" strokeWidth="3" />
+                <line x1="19" y1="15" x2="19" y2="21" strokeWidth="2" />
+                <line x1="16" y1="18" x2="22" y2="18" strokeWidth="2" />
+              </svg>
+            </button>
+
             {/* YouTube Music Song / Video Switcher Pill */}
             <div className="ytm-mode-switch-pill" role="tablist" aria-label="Playback Mode">
               <button
@@ -515,6 +561,30 @@ export function MusicPlayerBar({ onNavigate }) {
           </div>
         </div>
       </footer>
+
+      {/* Add to Playlist Modal */}
+      {isAddToPlaylistOpen && currentTrack && (
+        <AddToPlaylistModal
+          video={{
+            id: currentTrack.video_id || currentTrack.id,
+            video_id: currentTrack.video_id || currentTrack.id,
+            title: currentTrack.title,
+            thumbnail: currentTrack.thumbnail,
+            channel: currentTrack.channel,
+            duration: currentTrack.duration,
+            views: currentTrack.views,
+          }}
+          onNavigate={onNavigate}
+          onClose={() => setIsAddToPlaylistOpen(false)}
+          onSuccess={(path) => {
+            showToast(`Added to playlist "${path}"!`);
+            if (setCurrentTrack) {
+              setCurrentTrack((prev) => (prev ? { ...prev, folder_path: path } : prev));
+            }
+            window.dispatchEvent(new CustomEvent('sodo:library-changed', { detail: { path } }));
+          }}
+        />
+      )}
     </>
   );
 }

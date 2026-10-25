@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
+import { extractVideoId } from '../context/PlayerContext';
 
 export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate }) {
   const isLoggedIn = user || !!api.getToken();
@@ -66,7 +67,7 @@ export function AddToPlaylistModal({ video, user, onClose, onSuccess, onNavigate
     setIsSubmitting(true);
     setError(null);
 
-    const vid = video.id || video.video_id;
+    const vid = extractVideoId(video) || video.video_id || video.id;
 
     try {
       // 1. Add item to hierarchical playlist folder

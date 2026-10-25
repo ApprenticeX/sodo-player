@@ -1233,11 +1233,29 @@ input, select, textarea {
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .ytm-bar-folder-pill:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ytm-bar-folder-pill.add-new {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ytm-bar-folder-pill.add-new:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
 .ytm-bar-engine-tag {
@@ -1275,6 +1293,26 @@ input, select, textarea {
 
 .ytm-bar-fav-btn.is-favorited {
   color: var(--accent-red);
+}
+
+.ytm-bar-playlist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.ytm-bar-playlist-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Center Zone: Controls */
@@ -2086,6 +2124,18 @@ input, select, textarea {
   flex-direction: column;
 }
 
+#sodo-yt-player-container.is-dragging {
+  transition: none !important;
+  user-select: none;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.98), 0 0 0 2px var(--color-primary, #ff0000);
+}
+
+#sodo-yt-player-container.is-dragging iframe,
+#sodo-yt-player-container.is-dragging #sodo-yt-player-slot,
+#sodo-yt-player-container.is-dragging .yt-video-frame-wrapper {
+  pointer-events: none !important;
+}
+
 #sodo-yt-player-container.expanded.theater {
   width: 760px;
   max-width: calc(100vw - 48px);
@@ -2105,6 +2155,28 @@ input, select, textarea {
   border-bottom: 1px solid var(--border-subtle);
   user-select: none;
   flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.yt-video-overlay-header:active,
+#sodo-yt-player-container.is-dragging .yt-video-overlay-header {
+  cursor: grabbing;
+}
+
+.yt-video-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: grab;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color var(--transition-fast);
+}
+
+.yt-video-drag-handle:hover {
+  color: var(--text-primary);
 }
 
 .yt-video-header-left {

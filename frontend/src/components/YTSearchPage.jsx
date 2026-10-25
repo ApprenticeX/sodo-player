@@ -72,6 +72,9 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
   // Close 3-dot dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
+      if (e.target.closest('.ytm-video-menu-wrap')) {
+        return; // Let menu wrap button toggle handle it
+      }
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setOpenMenuId(null);
       }
@@ -401,7 +404,10 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
                         className={`ytm-dots-action-btn ${isMenuOpen ? 'active' : ''}`}
                         aria-label="Options"
                         title="Options"
-                        onClick={() => setOpenMenuId(isMenuOpen ? null : video.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId((prev) => (prev === video.id ? null : video.id));
+                        }}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                           <circle cx="12" cy="5" r="2" />
@@ -448,11 +454,17 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
                               setAddToPlaylistVideo(video);
                               setOpenMenuId(null);
                             }}
+                            title={!user && !api.getToken() ? 'Sign in required to save songs to playlists' : 'Add video to playlist'}
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                             </svg>
                             <span>Add to Playlist</span>
+                            {!user && !api.getToken() && (
+                              <span style={{ fontSize: '11px', color: '#ff9494', marginLeft: 'auto', background: 'rgba(255, 0, 0, 0.15)', padding: '2px 6px', border: '1px solid rgba(255, 0, 0, 0.3)', borderRadius: '4px' }}>
+                                Sign In Required
+                              </span>
+                            )}
                           </button>
 
                           <button
@@ -475,7 +487,8 @@ export function YTSearchPage({ user, onNavigate, onLogout }) {
                             type="button"
                             className="ytm-menu-item"
                             onClick={() => {
-                              copyToClipboard(video.url, 'Video link');
+                              const videoUrl = video.url || `https://www.youtube.com/watch?v=${video.id || video.video_id}`;
+                              copyToClipboard(videoUrl, 'Video link');
                               setOpenMenuId(null);
                             }}
                           >

@@ -76,6 +76,12 @@ export function PlayerProvider({ children }) {
   const [videoTheaterMode, setVideoTheaterMode] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState('All Songs');
 
+  // Draggable floating video player state
+  const [videoPosition, setVideoPosition] = useState(null); // { x: number, y: number } | null (defaults to bottom-right)
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef(null);
+  const dragStartRef = useRef(null);
+
   // Dual playback engine state: 'local' (HTML5 Audio 206 range stream) vs 'youtube' (IFrame)
   const [playbackEngine, setPlaybackEngine] = useState('youtube');
   const [isBuffering, setIsBuffering] = useState(false);
@@ -126,6 +132,98 @@ export function PlayerProvider({ children }) {
       }
     }, 400);
   }, [stopYtProgressTimer]);
+
+  // Draggable Floating Video Player Logic
+  const handleDragPointerDown = useCallback((e) => {
+    if (e.target.closest('button, a, input, [role="button"], [role="tab"]')) return;
+    if (e.button !== undefined && e.button !== 0) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    dragStartRef.current = {
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+      startX: rect.left,
+      startY: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+
+    setIsDragging(true);
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onPointerMove = (e) => {
+      if (!dragStartRef.current) return;
+      const { pointerX, pointerY, startX, startY, width, height } = dragStartRef.current;
+      const deltaX = e.clientX - pointerX;
+      const deltaY = e.clientY - pointerY;
+
+      let newX = startX + deltaX;
+      let newY = startY + deltaY;
+
+      const margin = 8;
+      const bottomPlayerHeight = 90;
+      const minX = margin;
+      const maxX = Math.max(margin, window.innerWidth - width - margin);
+      const minY = margin;
+      const maxY = Math.max(margin, window.innerHeight - height - bottomPlayerHeight);
+
+      newX = Math.min(Math.max(newX, minX), maxX);
+      newY = Math.min(Math.max(newY, minY), maxY);
+
+      setVideoPosition({ x: Math.round(newX), y: Math.round(newY) });
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      dragStartRef.current = null;
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setVideoPosition((prev) => {
+        if (!prev || !containerRef.current) return prev;
+        const rect = containerRef.current.getBoundingClientRect();
+        const margin = 8;
+        const bottomPlayerHeight = 90;
+        const maxX = Math.max(margin, window.innerWidth - rect.width - margin);
+        const maxY = Math.max(margin, window.innerHeight - rect.height - bottomPlayerHeight);
+        const clampedX = Math.min(Math.max(prev.x, margin), maxX);
+        const clampedY = Math.min(Math.max(prev.y, margin), maxY);
+        if (clampedX === prev.x && clampedY === prev.y) return prev;
+        return { x: clampedX, y: clampedY };
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const resetVideoPosition = useCallback(() => {
+    setVideoPosition(null);
+  }, []);
+
+  const toggleTheaterMode = useCallback(() => {
+    setVideoTheaterMode((prev) => !prev);
+    setVideoPosition(null);
+  }, []);
 
   const createYtPlayer = useCallback((vid, startSeconds = 0) => {
     if (!window.YT || !window.YT.Player) {
@@ -673,6 +771,7 @@ export function PlayerProvider({ children }) {
     <PlayerContext.Provider
       value={{
         currentTrack,
+        setCurrentTrack,
         isPlaying,
         queue,
         queueIndex,
@@ -710,6 +809,10 @@ export function PlayerProvider({ children }) {
         setIsVideoExpanded,
         toggleFavoriteTrack,
         downloadCurrentTrack,
+        videoPosition,
+        setVideoPosition,
+        resetVideoPosition,
+        isDragging,
       }}
     >
       {children}
@@ -720,11 +823,42 @@ export function PlayerProvider({ children }) {
       {/* YouTube Iframe Player Container: Docked (Music Mode) vs Expanded (Video Mode) */}
       <div
         id="sodo-yt-player-container"
-        className={`yt-docked-player ${isVideoExpanded ? 'expanded' : 'docked'} ${videoTheaterMode ? 'theater' : ''}`}
+        ref={containerRef}
+        className={`yt-docked-player ${isVideoExpanded ? 'expanded' : 'docked'} ${videoTheaterMode ? 'theater' : ''} ${isDragging ? 'is-dragging' : ''}`}
+        style={
+          isVideoExpanded && videoPosition
+            ? {
+                left: `${videoPosition.x}px`,
+                top: `${videoPosition.y}px`,
+                right: 'auto',
+                bottom: 'auto',
+                transform: 'none',
+              }
+            : undefined
+        }
       >
         {isVideoExpanded && (
-          <div className="yt-video-overlay-header">
+          <div
+            className="yt-video-overlay-header"
+            onPointerDown={handleDragPointerDown}
+            onDoubleClick={(e) => {
+              if (!e.target.closest('button, a, input, [role="tab"]')) {
+                resetVideoPosition();
+              }
+            }}
+            title="Drag to reposition player anywhere on screen (double-click to reset)"
+          >
             <div className="yt-video-header-left">
+              <div className="yt-video-drag-handle" title="Drag to reposition player">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="9" cy="6" r="1.5" />
+                  <circle cx="15" cy="6" r="1.5" />
+                  <circle cx="9" cy="12" r="1.5" />
+                  <circle cx="15" cy="12" r="1.5" />
+                  <circle cx="9" cy="18" r="1.5" />
+                  <circle cx="15" cy="18" r="1.5" />
+                </svg>
+              </div>
               <span className="yt-video-mode-tag">🎬 Video Mode</span>
               <div className="ytm-mode-switch-mini" role="tablist" aria-label="Playback Mode">
                 <button
@@ -747,10 +881,23 @@ export function PlayerProvider({ children }) {
             </div>
 
             <div className="yt-video-header-right">
+              {videoPosition && (
+                <button
+                  type="button"
+                  className="yt-video-ctrl-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetVideoPosition();
+                  }}
+                  title="Reset to default docked position"
+                >
+                  ↺ Dock
+                </button>
+              )}
               <button
                 type="button"
                 className="yt-video-ctrl-btn"
-                onClick={() => setVideoTheaterMode(!videoTheaterMode)}
+                onClick={toggleTheaterMode}
                 title={videoTheaterMode ? 'Exit Theater Mode' : 'Theater / Larger Mode'}
               >
                 {videoTheaterMode ? '⤡ Normal' : '⤢ Theater'}

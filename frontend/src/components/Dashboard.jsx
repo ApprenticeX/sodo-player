@@ -7,6 +7,9 @@ export function Dashboard({ user, onLogout, onNavigate }) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState(null);
   const [exportError, setExportError] = useState(null);
+  const [exportedJson, setExportedJson] = useState(null);
+  const [showJsonModal, setShowJsonModal] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -39,6 +42,42 @@ export function Dashboard({ user, onLogout, onNavigate }) {
       setExportError(err.message || 'Failed to download library backup.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleInspectData = async () => {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      const data = await api.exportUserData(false);
+      setExportedJson(data);
+      setShowJsonModal(true);
+    } catch (err) {
+      console.error('Fetch data failed:', err);
+      setExportError(err.message || 'Failed to retrieve user data for preview.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleCopyJson = async () => {
+    if (!exportedJson) return;
+    try {
+      const str = JSON.stringify(exportedJson, null, 2);
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(str);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = str;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 2500);
+    } catch (err) {
+      console.error('Copy failed:', err);
     }
   };
 
@@ -161,30 +200,47 @@ export function Dashboard({ user, onLogout, onNavigate }) {
                 </p>
               </div>
 
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleExportData}
-                disabled={isExporting}
-                style={{
-                  width: 'auto',
-                  padding: '10px 22px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                {isExporting ? (
-                  <>
-                    <span className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
-                    <span>Preparing Backup...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>📥 Download JSON Backup</span>
-                  </>
-                )}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="yt-nav-btn yt-nav-btn-secondary"
+                  onClick={handleInspectData}
+                  disabled={isExporting}
+                  style={{
+                    padding: '10px 18px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span>👁️ View JSON Data</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                  style={{
+                    width: 'auto',
+                    padding: '10px 22px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  {isExporting ? (
+                    <>
+                      <span className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
+                      <span>Preparing Backup...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>📥 Download JSON File</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {exportMessage && (
@@ -199,6 +255,93 @@ export function Dashboard({ user, onLogout, onNavigate }) {
               </div>
             )}
           </div>
+
+          {/* JSON Export Viewer Modal */}
+          {showJsonModal && exportedJson && (
+            <div className="yt-modal-backdrop" onClick={() => setShowJsonModal(false)}>
+              <div
+                className="yt-modal-content"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: '820px',
+                  width: '95%',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  backgroundColor: '#121212',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '12px',
+                  boxShadow: '0 24px 64px rgba(0, 0, 0, 0.95)',
+                }}
+              >
+                <div
+                  className="yt-modal-header"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px 20px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                      User Music Collection Export (JSON)
+                    </h3>
+                    <p style={{ fontSize: '12px', color: '#aaa', margin: '4px 0 0' }}>
+                      {exportedJson.stats?.total_songs || 0} tracks • {exportedJson.stats?.total_folders || 0} playlists • {exportedJson.stats?.total_favorites || 0} favorites
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="yt-nav-btn yt-nav-btn-secondary"
+                      onClick={handleCopyJson}
+                      style={{ padding: '6px 14px', fontSize: '12px' }}
+                    >
+                      {copiedJson ? '✓ Copied!' : '📋 Copy JSON'}
+                    </button>
+                    <button
+                      type="button"
+                      className="yt-nav-btn yt-nav-btn-primary"
+                      onClick={handleExportData}
+                      style={{ padding: '6px 14px', fontSize: '12px' }}
+                    >
+                      📥 Download File
+                    </button>
+                    <button
+                      type="button"
+                      className="yt-modal-close"
+                      onClick={() => setShowJsonModal(false)}
+                      style={{ background: 'transparent', border: 'none', color: '#aaa', fontSize: '20px', cursor: 'pointer', padding: '4px 8px' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px 20px', flex: 1, overflowY: 'auto' }}>
+                  <pre
+                    style={{
+                      background: '#050505',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      color: '#4ade80',
+                      fontSize: '12px',
+                      lineHeight: '1.5',
+                      overflowX: 'auto',
+                      maxHeight: '55vh',
+                      margin: 0,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {JSON.stringify(exportedJson, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>
