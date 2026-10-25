@@ -4,6 +4,14 @@
  */
 
 const TOKEN_KEY = 'sodo_auth_token';
+const API_BASE_URL = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '');
+
+function formatUrl(endpoint) {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+  return `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+}
 
 export const api = {
   getToken() {
@@ -37,7 +45,7 @@ export const api = {
     }
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch(formatUrl(endpoint), {
         ...options,
         headers,
       });
@@ -223,7 +231,7 @@ export const api = {
 
   // Songs & Audio Streaming / Download
   getStreamUrl(songId) {
-    return `/api/songs/${encodeURIComponent(songId)}/stream`;
+    return formatUrl(`/api/songs/${encodeURIComponent(songId)}/stream`);
   },
 
   async getSongStatus(songId) {
@@ -246,7 +254,7 @@ export const api = {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch('/api/user/data/export?download=true&pretty=true', {
+      const response = await fetch(formatUrl('/api/user/data/export?download=true&pretty=true'), {
         headers,
       });
       if (!response.ok) {

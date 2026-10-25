@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: sodo-player-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: ./render-build.sh
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 10000
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      - key: DATABASE_URL
+        sync: false

@@ -18,15 +18,48 @@ from logger import get_logger
 
 logger = get_logger("sodo.downloader")
 
-try:
-    from sodo.downloader import _ffmpeg_dir, clean_url, is_ffmpeg_available, sanitize_filename
-except ImportError:
-    # Ensure root and sodo package in sys.path
-    ROOT_DIR = BASE_DIR.parent
-    for p in [str(ROOT_DIR / "sodo"), str(ROOT_DIR)]:
-        if p not in sys.path:
-            sys.path.insert(0, p)
-    from sodo.downloader import _ffmpeg_dir, clean_url, is_ffmpeg_available, sanitize_filename
+# ---------------------------------------------------------------------------
+# Self-contained URL & Filename Utilities
+# ---------------------------------------------------------------------------
+
+_INVALID_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1F]')
+_TRAILING = re.compile(r"[\s.]+$")
+
+def sanitize_filename(name: str) -> str:
+    """Remove / replace characters that are illegal on Windows / POSIX."""
+    name = _INVALID_CHARS.sub("_", name)
+    name = _TRAILING.sub("", name)
+    return name[:200] or "media"
+
+def clean_url(url: str, *, allow_playlist: bool = True, force_playlist: bool = False) -> str:
+    """Clean and normalize a media URL, preserving or converting playlist URLs when appropriate."""
+    try:
+        from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
+        parsed = urlparse(url)
+        host = parsed.netloc.lower().lstrip("www.")
+
+        if host in ("youtu.be", "www.youtu.be"):
+            qs = parse_qs(parsed.query, keep_blank_values=False)
+            list_param = qs.get("list", [""])[0]
+            if (allow_playlist or force_playlist) and list_param and (force_playlist or not list_param.startswith("RD")):
+                return f"https://www.youtube.com/playlist?list={list_param}"
+            return urlunparse(parsed._replace(query="", fragment=""))
+
+        if host in ("youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"):
+            qs = parse_qs(parsed.query, keep_blank_values=False)
+            list_param = qs.get("list", [""])[0]
+            if parsed.path.startswith("/playlist") and list_param:
+                return f"https://www.youtube.com/playlist?list={list_param}"
+            if parsed.path == "/watch":
+                if (allow_playlist or force_playlist) and list_param and (force_playlist or not list_param.startswith("RD")):
+                    return f"https://www.youtube.com/playlist?list={list_param}"
+                kept = {k: v for k, v in qs.items() if k in {"v", "t"}}
+                new_query = urlencode({k: v[0] for k, v in kept.items()})
+                return urlunparse(parsed._replace(query=new_query, fragment=""))
+
+        return url
+    except Exception:
+        return url
 
 # Ensure output directory exists: backend/media/downloads
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,33 +87,47 @@ _LOCK = threading.Lock()
 def get_ffmpeg_dir() -> Optional[str]:
     r"""
     Resolve FFmpeg directory prioritizing:
-    1. C:\Users\asim\tools\sodo\bin
-    2. ~/tools/sodo/bin or ~/sodo/bin
-    3. sodo package discovery
-    4. System PATH
+    1. FFMPEG_PATH / FFMPEG_DIR environment variable
+    2. Local bin folders (backend/bin, root/bin)
+    3. User tools folders (~/tools/sodo/bin, ~/sodo/bin)
+    4. sodo package discovery
+    5. System PATH
     """
+    exe_suffix = ".exe" if sys.platform == "win32" else ""
+
+    # 1. Environment variable override
+    env_dir = os.getenv("FFMPEG_DIR") or os.getenv("FFMPEG_PATH")
+    if env_dir:
+        p = Path(env_dir)
+        if (p / f"ffmpeg{exe_suffix}").is_file():
+            return str(p)
+        if p.is_file() and p.name.startswith("ffmpeg"):
+            return str(p.parent)
+
+    # 2. Local & user candidate directories
     candidates = [
-        Path(r"C:\Users\asim\tools\sodo\bin"),
+        BASE_DIR / "bin",
+        BASE_DIR.parent / "bin",
         Path.home() / "tools" / "sodo" / "bin",
         Path.home() / "sodo" / "bin",
+        Path(r"C:\Users\asim\tools\sodo\bin"),
     ]
-    exe_suffix = ".exe" if sys.platform == "win32" else ""
 
     for candidate in candidates:
         if (candidate / f"ffmpeg{exe_suffix}").is_file():
             return str(candidate)
 
-    # Check sodo downloader resolution
-    sodo_dir = _ffmpeg_dir()
-    if sodo_dir and (Path(sodo_dir) / f"ffmpeg{exe_suffix}").is_file():
-        return str(sodo_dir)
-
-    # Check system PATH
+    # 3. Check system PATH
     system_ffmpeg = shutil.which("ffmpeg")
     if system_ffmpeg:
         return str(Path(system_ffmpeg).parent)
 
     return None
+
+
+def is_ffmpeg_available() -> bool:
+    """Check if ffmpeg binary is available locally or in system PATH."""
+    return get_ffmpeg_dir() is not None or shutil.which("ffmpeg") is not None
 
 
 # ---------------------------------------------------------------------------

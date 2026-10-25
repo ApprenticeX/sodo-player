@@ -115,15 +115,25 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-# CORS configuration allowing Vite frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Disposition", "X-Request-ID", "X-Response-Time"],
-)
+# CORS configuration allowing Vite frontend and cloud deployments (e.g. Render, Vercel)
+if "*" in CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^https?://.*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Disposition", "X-Request-ID", "X-Response-Time"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Disposition", "X-Request-ID", "X-Response-Time"],
+    )
 
 # Attach authentication, YouTube, Playlist, Song, and User Data Export routes
 app.include_router(auth_router)
@@ -133,6 +143,18 @@ app.include_router(songs_router)
 app.include_router(user_data_router)
 
 
+@app.get("/", tags=["Health"])
+def root_status():
+    """Root endpoint for instant cloud health checks."""
+    return {
+        "name": "Sodo Player API",
+        "status": "running",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
+
+
 @app.get("/api/health", tags=["Health"])
 def health_check():
     """Health check endpoint to verify backend status."""
@@ -140,4 +162,6 @@ def health_check():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    import os
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
